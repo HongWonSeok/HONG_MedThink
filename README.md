@@ -8,6 +8,8 @@ This repository contains the official implementation of our NAACL 2025 paper:
 
 [MedThink: Explaining Medical Visual Question Answering via Multimodal Decision-Making Rationale](https://aclanthology.org/2025.findings-naacl.415.pdf)
 
+![Model](model.png)
+
 ## 📖 Citation
 
 If you use our work, please cite:
