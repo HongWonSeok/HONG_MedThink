@@ -6,7 +6,7 @@ This repository contains the official implementation of our NAACL 2025 paper:
 > Xiaotang Gai, Chenyi Zhou, Jiaxiang Liu, Yang Feng, Jian Wu, Zuozhu Liu  
 > *Findings of the Association for Computational Linguistics: NAACL 2025*
 
-[MedThink: Explaining Medical Visual Question Answering via Multimodal Decision-Making Rationale](https://arxiv.org/abs/2404.12372)
+[MedThink: Explaining Medical Visual Question Answering via Multimodal Decision-Making Rationale](https://aclanthology.org/2025.findings-naacl.415.pdf)
 
 ## 📖 Citation
 
