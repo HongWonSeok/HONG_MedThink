@@ -13,6 +13,7 @@ def train_loop(_args):
     torch.manual_seed(_args.seed)  # pytorch random seed
     np.random.seed(_args.seed)  # numpy random seed
     torch.backends.cudnn.deterministic = True
+    
 
     model = T5ForMultimodalGeneration.from_pretrained(_args.pretrained_model_path, (100, 256))
     tokenizer = AutoTokenizer.from_pretrained(_args.pretrained_model_path)
@@ -141,6 +142,11 @@ if __name__ == "__main__":
     parser.add_argument('--wd', type=float, default=1e-2, help='Weight Decay')
     parser.add_argument('--seed', type=int, default=42, help='Random Seed')
     parser.add_argument('--dataset', type=str, choices=['rad', 'slake'])
+    
+    # 추가
+    parser.add_argument('--rational', action='store_true', help='Use rationale-based metric')
+
+    
     args = parser.parse_args()
     for arg, value in vars(args).items():
         print(f"{arg}: {value}")

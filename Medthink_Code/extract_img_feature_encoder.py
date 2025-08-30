@@ -7,6 +7,12 @@ from timm.data.transforms_factory import create_transform
 import os
 import argparse
 import json
+import sys
+
+detr_path = '/home/mixlab/tabular/medthink/detr'
+sys.path.append(detr_path)
+from util.misc import nested_tensor_from_tensor_list 
+
 
 def get_model(_img_type):
     print(f"Loading Model")
@@ -14,21 +20,44 @@ def get_model(_img_type):
     cooelf_path = "/home/mixlab/tabular/medthink/detr"
     _model = torch.hub.load(cooelf_path, 'detr_resnet101_dc5', pretrained=True, source='local')
     _transform = T.Compose([
-        T.Resize(224),
+        T.Resize((224, 224)),
         T.ToTensor(),
         T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
     ])
 
     return _model, _transform
 
-def extract_features(_model, _transform, _input_image, _img_type, _device):
-        print(f"Loading {_input_image}...")
-        img = Image.open(_input_image).convert("RGB")
-        input = _transform(img).unsqueeze(0).to(_device)
         
-        with torch.no_grad():
-            # return _model(input)[-1]
-            return _model(input)['pred_logits']
+def extract_features(model, transform, image_path, img_type, device): 
+    
+            
+    img = Image.open(image_path).convert("RGB")
+    tensor = transform(img).to(device)
+    
+    nested_tensor = nested_tensor_from_tensor_list([tensor]) 
+
+    with torch.no_grad():
+        # Backbone
+        features, pos = model.backbone(nested_tensor)
+        src, mask = features[-1].decompose()
+        assert mask is not None
+        src = model.input_proj(src)
+    
+        
+        # query_embed = model.query_embed.weight
+        bs, c, h, w = src.shape
+        src = src.flatten(2).permute(2, 0, 1)
+        pos_embed = pos[-1].flatten(2).permute(2, 0, 1)
+        # query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)
+        mask = mask.flatten(1)
+        
+        
+        memory = model.transformer.encoder(src, src_key_padding_mask=mask,  pos =pos_embed)
+
+
+       
+
+        return memory.permute(1, 0, 2)
 
 
 if __name__ == "__main__":
@@ -54,6 +83,7 @@ if __name__ == "__main__":
 
         model, transform = get_model(img_type)
         model.to(device)
+        
         model.eval()
 
         name_map = {}   # "KEY" is the image's ID, "VALUE" is the image's Index in the matrix

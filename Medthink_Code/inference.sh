@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0,1 python closed_end_generate.py --dataset rad --method Explanation --bs 8 --source_len 512 --target_len 256 --text_file_path data/R-RAD/closed_end/test.json --model_path rad_closed_end_experiments/Explanation --img_file_path data/R-RAD/detr.pth --img_name_map data/R-RAD/name_map.json --output_dir rad_closed_end_experiments
