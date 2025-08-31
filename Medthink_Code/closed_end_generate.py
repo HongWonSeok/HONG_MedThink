@@ -17,7 +17,7 @@ def eval_loop(_args):
     datacollator = DataCollatorForSeq2Seq(tokenizer=tokenizer)
 
     config = Seq2SeqTrainingArguments(
-        output_dir="./",
+        output_dir=args.output_dir,
         per_device_eval_batch_size=_args.eval_bs,
         predict_with_generate=True,
         generation_max_length=_args.target_len,
