@@ -23,9 +23,26 @@ def train_loop(_args):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
 
-    config = Seq2SeqTrainingArguments(
+    # config = Seq2SeqTrainingArguments(
+    #         output_dir=save_dir,
+    #         evaluation_strategy="no",
+    #         logging_strategy="epoch",
+    #         save_strategy="no",
+    #         save_total_limit=1,
+    #         learning_rate=_args.lr,
+    #         per_device_train_batch_size=_args.bs,
+    #         weight_decay=_args.wd,
+    #         num_train_epochs=_args.epoch,
+    #         metric_for_best_model="rougeL" if _args.method == "First-Stage_Reasoning" else "accuracy",
+    #         predict_with_generate=True,
+    #         generation_max_length=_args.target_len,
+    #         load_best_model_at_end=False,
+    #         report_to=["none"],
+    #     )
+    
+        config = Seq2SeqTrainingArguments(
             output_dir=save_dir,
-            evaluation_strategy="no",
+            evaluation_strategy="epoch",
             logging_strategy="epoch",
             save_strategy="no",
             save_total_limit=1,
