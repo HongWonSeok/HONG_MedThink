@@ -8,14 +8,20 @@ import torch
 from transformers import AutoTokenizer, Seq2SeqTrainingArguments, Seq2SeqTrainer, DataCollatorForSeq2Seq
 from dataset import ClosedMedVQADataset
 from model import T5ForMultimodalGeneration
+from model_learnable_prompt import T5ForMultimodalGeneration_LP
 
 def train_loop(_args):
     torch.manual_seed(_args.seed)  # pytorch random seed
     np.random.seed(_args.seed)  # numpy random seed
     torch.backends.cudnn.deterministic = True
     
+    if args.LP_use:
+        print('selected learnable prompt model')
+        model = T5ForMultimodalGeneration_LP.from_pretrained(_args.pretrained_model_path, (100, 256), prompt_length=_args.learnable_prompt_len)
+    else:
+        print('selected base model')
+        model = T5ForMultimodalGeneration.from_pretrained(_args.pretrained_model_path, (100, 256))
 
-    model = T5ForMultimodalGeneration.from_pretrained(_args.pretrained_model_path, (100, 256))
     tokenizer = AutoTokenizer.from_pretrained(_args.pretrained_model_path)
     datacollator = DataCollatorForSeq2Seq(tokenizer=tokenizer)
 
@@ -23,39 +29,24 @@ def train_loop(_args):
     if not os.path.exists(save_dir):
         os.mkdir(save_dir)
 
-    # config = Seq2SeqTrainingArguments(
-    #         output_dir=save_dir,
-    #         evaluation_strategy="no",
-    #         logging_strategy="epoch",
-    #         save_strategy="no",
-    #         save_total_limit=1,
-    #         learning_rate=_args.lr,
-    #         per_device_train_batch_size=_args.bs,
-    #         weight_decay=_args.wd,
-    #         num_train_epochs=_args.epoch,
-    #         metric_for_best_model="rougeL" if _args.method == "First-Stage_Reasoning" else "accuracy",
-    #         predict_with_generate=True,
-    #         generation_max_length=_args.target_len,
-    #         load_best_model_at_end=False,
-    #         report_to=["none"],
-    #     )
+ 
     
-        config = Seq2SeqTrainingArguments(
-            output_dir=save_dir,
-            evaluation_strategy="epoch",
-            logging_strategy="epoch",
-            save_strategy="no",
-            save_total_limit=1,
-            learning_rate=_args.lr,
-            per_device_train_batch_size=_args.bs,
-            weight_decay=_args.wd,
-            num_train_epochs=_args.epoch,
-            metric_for_best_model="rougeL" if _args.method == "First-Stage_Reasoning" else "accuracy",
-            predict_with_generate=True,
-            generation_max_length=_args.target_len,
-            load_best_model_at_end=False,
-            report_to=["none"],
-        )
+    config = Seq2SeqTrainingArguments(
+        output_dir=save_dir,
+        evaluation_strategy="no",
+        logging_strategy="epoch",
+        save_strategy="no",
+        save_total_limit=1,
+        learning_rate=_args.lr,
+        per_device_train_batch_size=_args.bs,
+        weight_decay=_args.wd,
+        num_train_epochs=_args.epoch,
+        metric_for_best_model="rougeL" if _args.method == "First-Stage_Reasoning" else "accuracy",
+        predict_with_generate=True,
+        generation_max_length=_args.target_len,
+        load_best_model_at_end=False,
+        report_to=["wandb"],
+    )
 
     # ========== Define compute_metrics functions ==============================
     def postprocess_text(_preds, _labels):
@@ -149,6 +140,7 @@ if __name__ == "__main__":
     parser.add_argument('--img_file_path', type=str, default='None')
     parser.add_argument('--img_name_map', type=str, default='None')
     parser.add_argument('--pretrained_model_path', type=str, default='None')
+    parser.add_argument('--learnable_prompt_len', type=int, default=10)
     parser.add_argument('--output_dir', type=str, default='None')
     parser.add_argument('--method', type=str, choices=["Explanation", "Reasoning", "First-Stage_Reasoning", "Second-Stage_Reasoning", "without_R"])
     parser.add_argument('--source_len', type=int, default=512)
@@ -162,6 +154,7 @@ if __name__ == "__main__":
     
     # 추가
     parser.add_argument('--rational', action='store_true', help='Use rationale-based metric')
+    parser.add_argument('--LP_use', action='store_true', help='Use learnable prompt')
 
     
     args = parser.parse_args()

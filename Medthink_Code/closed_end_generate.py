@@ -1,6 +1,7 @@
 import os
 from dataset import ClosedMedVQADataset
 from model import T5ForMultimodalGeneration
+from model_learnable_prompt import T5ForMultimodalGeneration_LP
 from transformers import AutoTokenizer, Seq2SeqTrainingArguments, Seq2SeqTrainer, DataCollatorForSeq2Seq
 import numpy as np
 import argparse
@@ -12,7 +13,14 @@ def eval_loop(_args):
     np.random.seed(_args.seed)  # numpy random seed
     torch.backends.cudnn.deterministic = True
 
-    model = T5ForMultimodalGeneration.from_pretrained(_args.model_path, (100, 256))
+    if args.LP_use:
+        print('selected learnable prompt model')
+        model = T5ForMultimodalGeneration_LP.from_pretrained(_args.model_path, (100, 256), prompt_length=_args.learnable_prompt_len)
+    else:
+        print('selected base model')
+        model = T5ForMultimodalGeneration.from_pretrained(_args.model_path, (100, 256))
+        
+        
     tokenizer = AutoTokenizer.from_pretrained(_args.model_path)
     datacollator = DataCollatorForSeq2Seq(tokenizer=tokenizer)
 
@@ -69,7 +77,8 @@ def eval_loop(_args):
         with open(save_path, "w", encoding="utf-8") as OutputFile:
             json.dump(raw_data, OutputFile, ensure_ascii=False, indent=4)
     else:
-        save_path = os.path.join(_args.output_dir, _args.method, "test_response.json")
+        save_path = os.path.join(_args.output_dir, "test_response.json")
+    
         with open(save_path, "w", encoding="utf-8") as OutputFile:
             json.dump(questions_dict, OutputFile, ensure_ascii=False, indent=4)
 
@@ -78,6 +87,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--text_file_path', type=str, default='None')
     parser.add_argument('--img_file_path', type=str, default='None')
+    parser.add_argument('--learnable_prompt_len', type=int, default=10)
     parser.add_argument('--img_name_map', type=str, default='None')
     parser.add_argument('--model_path', type=str, default='None')
     parser.add_argument('--output_dir', type=str, default='None')
@@ -87,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument('--seed', type=int, default=42, help='Random Seed')
     parser.add_argument('--dataset', type=str, choices=['rad', 'slake'])
     parser.add_argument('--method', type=str, choices=["Explanation", "Reasoning", "First-Stage_Reasoning", "Second-Stage_Reasoning", "without_R"])
+    parser.add_argument('--LP_use', action='store_true', help='Use learnable prompt')
     args = parser.parse_args()
 
     for arg, value in vars(args).items():

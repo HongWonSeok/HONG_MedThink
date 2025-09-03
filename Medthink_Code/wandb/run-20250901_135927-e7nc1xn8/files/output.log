@@ -1,0 +1,47 @@
+  0%|                                                                                                                                                                | 0/34200 [00:00<?, ?it/s]You're using a T5TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
+Traceback (most recent call last):
+  File "closed_end_train.py", line 170, in <module>
+    train_loop(args)
+  File "closed_end_train.py", line 140, in train_loop
+    trainer.train()
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/transformers/trainer.py", line 1662, in train
+    return inner_training_loop(
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/transformers/trainer.py", line 1929, in _inner_training_loop
+    tr_loss_step = self.training_step(model, inputs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/transformers/trainer.py", line 2699, in training_step
+    loss = self.compute_loss(model, inputs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/transformers/trainer.py", line 2731, in compute_loss
+    outputs = model(**inputs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/mixlab/tabular/medthink/Medthink/Medthink_Code/model.py", line 423, in forward
+    decoder_outputs = self.decoder(
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/transformers/models/t5/modeling_t5.py", line 1086, in forward
+    layer_outputs = layer_module(
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/transformers/models/t5/modeling_t5.py", line 693, in forward
+    self_attention_outputs = self.layer[0](
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/transformers/models/t5/modeling_t5.py", line 600, in forward
+    attention_output = self.SelfAttention(
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/transformers/models/t5/modeling_t5.py", line 560, in forward
+    attn_weights = nn.functional.softmax(scores.float(), dim=-1).type_as(
+  File "/workspace/.conda/envs/medthink/lib/python3.8/site-packages/torch/nn/functional.py", line 1888, in softmax
+    ret = input.softmax(dim)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 24.00 MiB. GPU 0 has a total capacity of 9.76 GiB of which 22.62 MiB is free. Process 2954260 has 9.73 GiB memory in use. Of the allocated memory 9.35 GiB is allocated by PyTorch, and 133.13 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

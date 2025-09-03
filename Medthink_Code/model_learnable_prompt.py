@@ -19,12 +19,18 @@ from transformers.utils.model_parallel_utils import assert_device_map, get_devic
 from torch.utils.checkpoint import checkpoint
 
 
-class JointEncoder(T5Stack):
-    def __init__(self, config, embed_tokens=None, patch_size=None):
+class JointEncoder_LP(T5Stack):
+    def __init__(self, config, embed_tokens=None, patch_size=None, prompt_length: int = 10):
         super().__init__(config)
 
         self.embed_tokens = embed_tokens
         self.is_decoder = config.is_decoder
+
+        ##################### text앞에 learnable pormpt 추가 #####################
+        self.prompt_length = prompt_length
+        if self.prompt_length > 0:
+            self.prompt_embeddings = nn.Embedding(self.prompt_length, config.d_model)
+        ######################################################################### 
 
         self.patch_num, self.patch_dim = patch_size
         self.image_dense = nn.Linear(self.patch_dim, config.d_model)
@@ -139,6 +145,22 @@ class JointEncoder(T5Stack):
             assert self.embed_tokens is not None, "You have to initialize the model with valid token embeddings"
             inputs_embeds = self.embed_tokens(input_ids)
 
+        
+        ##################### prompt 적용 #####################
+        if self.prompt_length > 0:
+            batch_size = inputs_embeds.shape[0]
+
+            learnable_prompt = self.prompt_embeddings(
+                torch.arange(0, self.prompt_length, device=inputs_embeds.device)
+            )
+            learnable_prompt = learnable_prompt.expand(batch_size, -1, -1)
+            
+            inputs_embeds = torch.cat([learnable_prompt, inputs_embeds], dim=1)
+
+                
+            input_shape = inputs_embeds.size()[:-1]
+        ###################################################### 
+        
         batch_size, seq_length = input_shape
 
         # required mask seq length can be calculated via length of past
@@ -314,7 +336,7 @@ class JointEncoder(T5Stack):
         )
 
 
-class T5ForMultimodalGeneration(T5ForConditionalGeneration):
+class T5ForMultimodalGeneration_LP(T5ForConditionalGeneration):
     _keys_to_ignore_on_load_missing = [
         r"encoder.embed_tokens.weight",
         r"decoder.embed_tokens.weight",
@@ -324,17 +346,22 @@ class T5ForMultimodalGeneration(T5ForConditionalGeneration):
         r"decoder.block.0.layer.1.EncDecAttention.relative_attention_bias.weight",
     ]
 
-    def __init__(self, config: T5Config, patch_size):
+    def __init__(self, config: T5Config, patch_size, prompt_length: int = 10):
         super().__init__(config)
         self.model_dim = config.d_model
-
+        
         self.shared = nn.Embedding(config.vocab_size, config.d_model)
 
         encoder_config = copy.deepcopy(config)
         encoder_config.is_decoder = False
         encoder_config.use_cache = False
         encoder_config.is_encoder_decoder = False
-        self.encoder = JointEncoder(encoder_config, self.shared, patch_size)
+        
+        ################## prompt_length 추가 ##################
+        self.lp_len = prompt_length
+        self.encoder = JointEncoder_LP(encoder_config, self.shared, patch_size, prompt_length=self.lp_len)
+        ########################################################
+        
         decoder_config = copy.deepcopy(config)
         decoder_config.is_decoder = True
         decoder_config.is_encoder_decoder = False
@@ -378,8 +405,22 @@ class T5ForMultimodalGeneration(T5ForConditionalGeneration):
                 warnings.warn(__HEAD_MASK_WARNING_MSG, FutureWarning)
                 decoder_head_mask = head_mask
 
+        ########### learnable prompt 적용 부분 mask까지 적용해줘야함 ###########
+        if self.lp_len > 0 and attention_mask is not None:
+            batch_size = input_ids.shape[0] if input_ids is not None else inputs_embeds.shape[0]
+            prompt_mask = torch.ones(
+                batch_size, 
+                self.lp_len, 
+                device=attention_mask.device, 
+                dtype=attention_mask.dtype
+            )
+            attention_mask = torch.cat([prompt_mask, attention_mask], dim=1)
+        #####################################################################
+        
+        print(f"\n[Main Model] Encoder로 전달 직전 attention_mask shape: {attention_mask.shape}")
         # Encode if needed (training, first prediction pass)
         if encoder_outputs is None:
+            print(f"[Main Model] Encoder로 전달 직전 input_ids shape: {input_ids.shape}")
             # Convert encoder inputs in embeddings if needed
             encoder_outputs = self.encoder(
                 input_ids=input_ids,
@@ -400,6 +441,7 @@ class T5ForMultimodalGeneration(T5ForConditionalGeneration):
             )
 
         hidden_states = encoder_outputs[0]
+        # hidden_states = encoder_outputs.last_hidden_state
         
         if self.model_parallel:
             torch.cuda.set_device(self.decoder.first_device)
